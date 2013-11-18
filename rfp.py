@@ -14,9 +14,9 @@ def create(browser,
            name='',
            payee=None,
            address=None,
-           line_items=[],
+           line_items=(),
            office_note='',
-           receipts=[],
+           receipts=(),
            send_to=None):
     """
     Create an RFP Reimbursement. Exposes the most common options for both MIT
@@ -80,7 +80,7 @@ def create(browser,
     i = 0
     for date_of_service, gl_account, cost_object, amount, explanation \
         in line_items:
-        
+
         if i > 0:
             page.add_line()
         page.date_of_service(i, date_of_service)
@@ -160,8 +160,19 @@ def view(browser, rfp_number):
     details['office_note'] = page.office_note()
     details['history'] = page.history()
     return details
-    
+
 class BasePage(object):
+    """
+    Represents a web page loaded through Selenium. Each page is a child class of
+    BasePage. Pages have fields, which may be read-write or read-only, and actions,
+    which return a new page. Includes common methods for interacting with SAPweb
+    pages.
+
+    .. warning::
+       Most :class:`BasePage`s should not be accessed directly, as SAPweb cannot
+       handle directly linking to pages. Individual classes will note whether or
+       not they are an "entry page" in their documentation.
+    """
     entry_url = None
 
     def __init__(self, browser):
@@ -304,6 +315,9 @@ class BasePage(object):
         return browsermultixp(xpath)
 
 class InboxPage(BasePage):
+    """
+    The RFP Inbox. Entry page.
+    """
     entry_url = "https://insidemit-apps.mit.edu/apps/rfp/InboxEntry.action?gatewayType=admin&sapSystemId=PS1"
     help_url = "http://insidemit.mit.edu/help-apps/rfp_inbox.shtml"
 
@@ -439,16 +453,28 @@ class InboxPage(BasePage):
         return self._row_element(rfp)[8].text
 
 def CreateReimbursementPage(browser):
+    """
+    Encapuslates the Create RFP Reimbursement entry URL, returning an instance of
+    :class:`SearchForPayeePage`. Entry page.
+    """
     entry_url = "https://insidemit-apps.mit.edu/apps/rfp/SelectPayeeReimbursementEntry.action?sapSystemId=PS1"
     browser.get(entry_url)
     return SearchForPayeePage(browser)
 
 def CreatePaymentPage(browser):
+    """
+    Encapuslates the Create RFP Payment entry URL, returning an instance of
+    :class:`SearchForPayeePage`. Entry page.
+    """
     entry_url = "https://insidemit-apps.mit.edu/apps/rfp/SelectPayeePaymentEntry.action?sapSystemId=PS1"
     browser.get(entry_url)
     return SearchForPayeePage(browser)
 
 class SearchForPayeePage(BasePage):
+    """
+    The first step of RFP creation, the Search for Payee page. Not an entry page;
+    use :function:`CreateReimbursementPage` and :class:`CreatePaymentPage` instead.
+    """
     help_url = "http://insidemit.mit.edu/help-apps/rfp_select_payee.shtml"
 
     def is_mit(self, val=None):
@@ -498,6 +524,9 @@ class SearchForPayeePage(BasePage):
             return RequestRfpPage(self.browser)
 
 class RequestRfpPage(BasePage):
+    """
+    The second step of RFP creation, the main data-entry page. Not an entry page.
+    """
     help_urls = ["http://insidemit.mit.edu/help-apps/rfp_reimbursement.shtml",
                  "http://insidemit.mit.edu/help-apps/rfp_payment.shtml"]
 
@@ -750,6 +779,9 @@ class RequestRfpPage(BasePage):
         return AttachReceiptPage(self.browser)
 
 class ViewAndEditPage(RequestRfpPage):
+    """
+    An editable RFP, either newly-created or in the inbox. Not an entry page.
+    """
     help_urls = ["http://insidemit.mit.edu/help-apps/rfp_reimbursement.shtml",
                  "http://insidemit.mit.edu/help-apps/rfp_payment.shtml"]
 
@@ -788,7 +820,7 @@ class ViewAndEditPage(RequestRfpPage):
         browsercss(".attachReceipts").click()
         # Do not perform checking because errors on this page will persist.
         return AttachReceiptPage(self.browser)
-    
+
     def save(self):
         """
         Click 'Save'. The page refreshes, but this object is still valid.
@@ -806,6 +838,9 @@ class ViewAndEditPage(RequestRfpPage):
         return SendToPage(self.browser)
 
 class ViewOnlyPage(BasePage):
+    """
+    An RFP that cannot be edited, i.e. one accessed from search. Not an entry page.
+    """
     help_urls = ["http://insidemit.mit.edu/help-apps/rfp_reimbursement.shtml",
                  "http://insidemit.mit.edu/help-apps/rfp_payment.shtml"]
 
@@ -868,7 +903,7 @@ class ViewOnlyPage(BasePage):
             return browserxp(xpath).text
         except NoSuchElementException:
             return None
-        
+
     def addressee(self):
         """
         Get the field 'Name' in the mailing instructions section if shown,
@@ -987,7 +1022,7 @@ class ViewOnlyPage(BasePage):
             return browserxp(xpath).text
         except NoSuchElementException:
             return None
-        
+
 
     def attach_receipt(self):
         """
@@ -1016,6 +1051,9 @@ class ViewOnlyPage(BasePage):
         return result
 
 class AttachReceiptPage(BasePage):
+    """
+    The receipt upload overlay; treated as a separate page. Not an entry page.
+    """
     help_url = "http://insidemit.mit.edu/help-apps/rfp_reimbursement.shtml"
 
     def __init__(self, browser):
@@ -1068,8 +1106,11 @@ class AttachReceiptPage(BasePage):
             return ViewAndEditPage(self.browser)
 
 class SendToPage(BasePage):
+    """
+    The Send To page, including search and search results. Not an entry page.
+    """
     help_url = "http://insidemit.mit.edu/help-apps/rfp_send_to.shtml"
-    
+
     def return_to_rfp(self):
         """
         Click the 'Return to RFP' link. Return an instance of
@@ -1079,7 +1120,7 @@ class SendToPage(BasePage):
         browsercss("a[href='ReturnToRfp.action']").click()
         self._pre_transition()
         return ViewAndEditPage(self.browser)
-    
+
     def recipient_name(self, val=None):
         """
         Get or set the field 'Recipient's Name'.
@@ -1125,8 +1166,11 @@ class SendToPage(BasePage):
         browsercss(".sendToAction").click()
         self._pre_transition()
         return ViewOnlyPage(self.browser)
-        
+
 class SearchPage(BasePage):
+    """
+    The Search for RFP page. Entry page.
+    """
     entry_url = "https://insidemit-apps.mit.edu/apps/rfp/SearchEntry.action?sapSystemId=PS1"
     help_url = "http://insidemit.mit.edu/help-apps/rfp_search.shtml"
 
@@ -1145,7 +1189,7 @@ class SearchPage(BasePage):
         Get or set the field 'Company Code'.
         """
         return self._select("#coCode", val)
-            
+
     def rfp_number(self, val=None):
         """
         Get or set the field 'RFP Number'.
@@ -1208,7 +1252,7 @@ class SearchPage(BasePage):
 
         If index is None or not specified: return an ordered list of RFP
         numbers found in the search.
-        
+
         If index is not None: select a search result, treating `index` as
         specifying a result by its zero-indexed position in the list. Return an
         instance of :class:`ViewOnlyPage`.
@@ -1265,7 +1309,7 @@ class SearchPage(BasePage):
         """
         Get the field 'Amount' for the specified RFP.
         """
-        return self._row_element(rfp)[7].text            
+        return self._row_element(rfp)[7].text
 
 class FailedTransitionError(Exception):
     """

@@ -1,3 +1,11 @@
+"""
+    sap_profiles
+    ~~~~~~~~~~~~
+
+    The `sap_profiles` module includes utility methods to create and load
+    Selenium browser profiles configured for use with SAPweb.
+"""
+
 import os
 import shutil
 import sys
@@ -22,7 +30,7 @@ def create_firefox_profile(profile_dir=DEFAULT_PROFILE, overwrite=False):
             shutil.rmtree(profile_dir)
         else:
             raise OSError("Profile directory %s already exists." % profile_dir)
-    
+
     profile = webdriver.FirefoxProfile()
     profile.accept_untrusted_certs = False
     profile.set_preference("security.default_personal_cert",
@@ -52,10 +60,10 @@ def create_firefox_profile(profile_dir=DEFAULT_PROFILE, overwrite=False):
 
     # don't use browser.quit() b/c removes profile dir
     browser.binary.kill()
-    
+
     temp_dir = browser.firefox_profile.path
     shutil.move(temp_dir, profile_dir)
-    
+
     # delete extension to avoid future errors
     shutil.rmtree(os.path.join(profile_dir, "extensions",
                                "fxdriver@googlecode.com"))
