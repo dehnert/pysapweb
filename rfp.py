@@ -120,7 +120,24 @@ def create(browser,
 
 def view(browser, rfp_number):
     """
-    Return details about the specified RFP as a dictionary.
+    Return details about the specified RFP as a dictionary. Keys may include:
+
+    ==============  ====================  ========
+    Details         Address               Tax
+    ==============  ====================  ========
+    rfp_number      mailing_instructions  tax_type
+    inbox           addressee             ssn_tin
+    payee           phone
+    company_code    address
+    rfp_name        city
+    rfp_type        state
+    payment_method  postal_code
+    office_note     country
+    history
+    ==============  ====================  ========
+    
+    The line_items key is a list of dictionaries, each containing:
+    date_of_service, gl_account, cost_object, amount, explanation.
     """
     # Search for RFP
     page = SearchPage(browser)
@@ -164,14 +181,14 @@ def view(browser, rfp_number):
 class BasePage(object):
     """
     Represents a web page loaded through Selenium. Each page is a child class of
-    BasePage. Pages have fields, which may be read-write or read-only, and actions,
-    which return a new page. Includes common methods for interacting with SAPweb
-    pages.
+    BasePage. Pages have fields, which may be read-write or read-only, and
+    actions, which return a new page. Includes common methods for interacting
+    with SAPweb pages.
 
     .. warning::
-       Most :class:`BasePage`s should not be accessed directly, as SAPweb cannot
-       handle directly linking to pages. Individual classes will note whether or
-       not they are an "entry page" in their documentation.
+       Most pages should not be accessed directly, as SAPweb often requires that
+       pages be accessed in a specific order. Individual classes will note
+       whether or not they are an "entry page" in their documentation.
     """
     entry_url = None
 
@@ -193,8 +210,8 @@ class BasePage(object):
 
     def errors(self):
         """
-        Return a list of text errors shown by the SAPweb UI. Errors usually
-        indicate that an attempted action has failed.
+        Return a list of errors shown by the SAPweb UI. Errors usually indicate
+        that an attempted action has failed.
         """
         # Regular Errors
         browsermulticss = self.browser.find_elements_by_css_selector
@@ -204,14 +221,14 @@ class BasePage(object):
 
     def info(self):
         """
-        Return a list of text informational messages shown by the SAPweb UI.
+        Return a list of informational messages shown by the SAPweb UI.
         """
         browsermulticss = self.browser.find_elements_by_css_selector
         return [e.text for e in browsermulticss('.portlet-msg-alert')]
 
     def success(self):
         """
-        Return a list of text success messages shown by the SAPweb UI.
+        Return a list of success messages shown by the SAPweb UI.
         """
         browsermulticss = self.browser.find_elements_by_css_selector
         return [e.text for e in browsermulticss('.portlet-msg-success')]
@@ -323,7 +340,7 @@ class InboxPage(BasePage):
 
     def list(self):
         """
-        Get a list of displayed RFPs, by RFP number (as a string).
+        Get a list of displayed RFPs by RFP number (as strings).
         """
         browsermulticss = self.browser.find_elements_by_css_selector
         return [e.text for e in browsermulticss("td.data > a")]
@@ -344,15 +361,15 @@ class InboxPage(BasePage):
 
     def is_deletable(self, rfp):
         """
-        Determine whether or not the specified RFP may currently be deleted.
+        Determine whether or not the specified RFP may deleted by the user.
         Return True or False.
         """
         return self._row_element(rfp)[9].text != 'n/a'
 
     def mark_for_deletion(self, rfp, val=None):
         """
-        Get or set whether or not this RFP is marked for deletion. True is
-        marked, False is unmarked.
+        Get or set whether or not the specified RFP is marked for deletion. True
+        if marked, False if unmarked.
         """
         browserxp = self.browser.find_element_by_xpath
         xpath = ("//a[contains(text(), '%s')]/../../td//" +
@@ -454,8 +471,8 @@ class InboxPage(BasePage):
 
 def CreateReimbursementPage(browser):
     """
-    Encapuslates the Create RFP Reimbursement entry URL, returning an instance of
-    :class:`SearchForPayeePage`. Entry page.
+    Encapuslates the Create RFP Reimbursement entry URL, returning an instance
+    of :class:`SearchForPayeePage`. Entry page.
     """
     entry_url = "https://insidemit-apps.mit.edu/apps/rfp/SelectPayeeReimbursementEntry.action?sapSystemId=PS1"
     browser.get(entry_url)
@@ -472,14 +489,15 @@ def CreatePaymentPage(browser):
 
 class SearchForPayeePage(BasePage):
     """
-    The first step of RFP creation, the Search for Payee page. Not an entry page;
-    use :function:`CreateReimbursementPage` and :class:`CreatePaymentPage` instead.
+    The first step of RFP creation, the Search for Payee page. Not an entry
+    page; use :py:func:`CreateReimbursementPage` and
+    :py:func:`CreatePaymentPage` instead of direct instantiation.
     """
     help_url = "http://insidemit.mit.edu/help-apps/rfp_select_payee.shtml"
 
     def is_mit(self, val=None):
         """
-        Get or set the field 'MIT/Non-MIT'. True for MIT, False for Non-MIT.
+        Get or set the field 'MIT/Non-MIT'. True if MIT, False if Non-MIT.
         """
         if val is None:
             return self._radio("payeeType") == "MIT"
@@ -525,7 +543,8 @@ class SearchForPayeePage(BasePage):
 
 class RequestRfpPage(BasePage):
     """
-    The second step of RFP creation, the main data-entry page. Not an entry page.
+    The second step of RFP creation, where all the knobs are located. Not an
+    entry page.
     """
     help_urls = ["http://insidemit.mit.edu/help-apps/rfp_reimbursement.shtml",
                  "http://insidemit.mit.edu/help-apps/rfp_payment.shtml"]
@@ -590,7 +609,7 @@ class RequestRfpPage(BasePage):
         """
         Get or set the field 'Address' (for RFP Reimbursement, this is the
         mailing address; for RFP Payment, this is both the permanent and
-        mailing address - the must be the same).
+        mailing address---they must be the same).
 
         Non-MIT payees only.
         """
@@ -690,7 +709,7 @@ class RequestRfpPage(BasePage):
         """
         Get or set the field 'Name' in the mailing instructions section under
         'Deliver check to MIT address'. Applies to both interdepartmental
-        mail and holding-for-pickup.
+        mail and holding for pickup.
 
         Non-MIT payees only.
         """
@@ -839,7 +858,8 @@ class ViewAndEditPage(RequestRfpPage):
 
 class ViewOnlyPage(BasePage):
     """
-    An RFP that cannot be edited, i.e. one accessed from search. Not an entry page.
+    An RFP that cannot be edited, i.e. one accessed from search. Not an entry
+    page.
     """
     help_urls = ["http://insidemit.mit.edu/help-apps/rfp_reimbursement.shtml",
                  "http://insidemit.mit.edu/help-apps/rfp_payment.shtml"]
@@ -1174,15 +1194,15 @@ class SearchPage(BasePage):
     entry_url = "https://insidemit-apps.mit.edu/apps/rfp/SearchEntry.action?sapSystemId=PS1"
     help_url = "http://insidemit.mit.edu/help-apps/rfp_search.shtml"
 
-    def rfp_types(self, val0=None, val1=None, val2=None):
+    def rfp_types(self, parked=None, posted=None, deleted=None):
         """
         Get or set the field 'RFP Types', represented as a tuple of booleans:
         (Parked, Posted, Deleted).
         """
-        parked = self._checkbox("#parked", val0)
-        posted = self._checkbox("#posted", val1)
-        deleted = self._checkbox("#deleted", val2)
-        return (parked, posted, deleted)
+        Is_parked = self._checkbox("#parked", parked)
+        is_posted = self._checkbox("#posted", posted)
+        is_deleted = self._checkbox("#deleted", deleted)
+        return (is_parked, is_posted, is_deleted)
 
     def company_code(self, val=None):
         """

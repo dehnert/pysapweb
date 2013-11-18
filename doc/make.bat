@@ -115,9 +115,9 @@ if "%1" == "qthelp" (
 	echo.
 	echo.Build finished; now you can run "qcollectiongenerator" with the ^
 .qhcp project file in %BUILDDIR%/qthelp, like this:
-	echo.^> qcollectiongenerator %BUILDDIR%\qthelp\py-sapweb.qhcp
+	echo.^> qcollectiongenerator %BUILDDIR%\qthelp\pysapweb.qhcp
 	echo.To view the help file:
-	echo.^> assistant -collectionFile %BUILDDIR%\qthelp\py-sapweb.ghc
+	echo.^> assistant -collectionFile %BUILDDIR%\qthelp\pysapweb.ghc
 	goto end
 )
 

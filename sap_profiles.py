@@ -22,7 +22,7 @@ def create_firefox_profile(profile_dir=DEFAULT_PROFILE, overwrite=False):
     This involves two steps: installing an MIT certificate, and installing an
     extension to prompt for the Firefox Master Password on startup. (The
     extension is necessary because if Firefox prompts for this password during
-    a page load, Selenium will lose a handle on the page.)
+    a page load, Selenium will lose its handle on the page.)
     """
     profile_dir = os.path.expanduser(profile_dir)
     if os.path.exists(profile_dir):
