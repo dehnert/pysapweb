@@ -67,6 +67,7 @@ def create(browser,
         else:
             raise IndexError("address has an improper length.")
         # -- entry ---
+        page.country(country)
         page.address(address_line)
         page.city(city)
         try:
@@ -74,7 +75,6 @@ def create(browser,
         except NameError:
             pass
         page.postal_code(postal_code)
-        page.country(country)
 
     # Line Items
     i = 0
