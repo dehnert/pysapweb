@@ -75,3 +75,6 @@ def load_firefox(profile_dir=DEFAULT_PROFILE):
     profile = webdriver.FirefoxProfile(profile_dir)
     browser = webdriver.Firefox(profile)
     return browser
+
+if __name__ == "__main__":
+    create_firefox_profile()
