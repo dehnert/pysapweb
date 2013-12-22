@@ -27,3 +27,6 @@ doc/_build
 
 # Local Files
 _local
+
+# Distutils
+MANIFEST
