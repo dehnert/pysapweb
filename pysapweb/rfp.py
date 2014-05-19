@@ -9,6 +9,7 @@
 """
 
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.select import Select
 
 def create(browser,
            name='',
@@ -292,15 +293,13 @@ class BasePage(object):
             selector = "select%s option:checked" % fragment
             return browsercss(selector).text.strip()
         else:
-            try:
-                # Convert values (i.e. 'US') into text (i.e., 'United St...')
-                optselector = "select%s option[value='%s']" % \
-                              (fragment, val)
-                val = browsercss(optselector).text.strip()
-            except NoSuchElementException:
-                pass
-            sel = browsercss("select%s" % fragment)
-            sel.send_keys(val + '\t')
+            optselector = "select%s option[value='%s']" % \
+                          (fragment, val)
+            val = browsercss(optselector).text.strip()
+
+            select_welem = browsercss("select%s" % fragment)
+            select_elem = Select(select_welem)
+            select_elem.select_by_visible_text(val)
             assert self._select(fragment) == val
 
     def _datalist(self, label):
